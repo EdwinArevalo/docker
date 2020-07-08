@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const multer = require('multer');
 const exphbs = require('express-handlebars');//para las plantillas
 const methodOverride = require('method-override'); //para enviar métodos PUT DELETE 
 
@@ -17,6 +18,16 @@ app.use(cookieSession({
   }));
 app.use(passport.initialize());
 app.use(passport.session());
+
+//multer config
+const storage = multer.diskStorage({
+  destination: path.join(__dirname, 'public/uploads'),
+  filename: (req, file, cb) => {
+    cb(null, new Date().getTime() + path.extname(file.originalname) );
+  }
+});
+app.use(multer({storage}).single('image'));
+
 
 
 //login methods and routes

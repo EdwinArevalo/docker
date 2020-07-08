@@ -2,6 +2,14 @@ const express = require('express');
 const router = express.Router();
 
 const Contact = require('../models/Contact');
+const cloudinary = require('cloudinary');
+cloudinary.config({
+    cloud_name: 'dmkawtayh',
+    api_key: '217793574668577',
+    api_secret: 'PDLibJjWk4TQSBlxls62dRhNDok'
+});
+
+const fs = require('fs-extra');
 
 const isLoggedIn = (req, res, next) => {
     if (req.user) {
@@ -17,8 +25,12 @@ router.get('/contacts/add', isLoggedIn, (req, res)=>{
 });
 
 router.post('/contacts/new-contact', isLoggedIn, async (req,res)=>{
+     
     const {contactName, contactLastname, contactEmail, contactBirthday} = req.body;
     let errors =[];
+    if(!req.file){
+        errors.push({text: 'La imagen del contacto es necesaria'});
+    } 
     if(!contactName){
         errors.push({text: 'Por favor escriba el nombre del contacto'});
     }
@@ -30,7 +42,8 @@ router.post('/contacts/new-contact', isLoggedIn, async (req,res)=>{
     }
     if(!contactBirthday){
         errors.push({text:'Por favor escriba la fecha de nacimiento del contacto'});
-    }
+    } 
+
     if(errors.length > 0){
         res.render('contacts/new-contact',{
             errors,
@@ -40,8 +53,12 @@ router.post('/contacts/new-contact', isLoggedIn, async (req,res)=>{
             contactBirthday
         });
     }else{
-        const newContact = new Contact({contactName, contactLastname, contactEmail, contactBirthday}); 
-        await newContact.save(); 
+        const {path} = req.file;
+        const {public_id, secure_url} = await cloudinary.v2.uploader.upload(path);
+
+        const newContact = new Contact({contactName, contactLastname, contactEmail, contactBirthday, imageUrl:secure_url,public_id}); 
+        await newContact.save();
+        await fs.unlink(path);
         res.redirect('/contacts');
     }
 });
@@ -59,6 +76,7 @@ router.get('/contacts', isLoggedIn, async (req, res)=>{
                         contactLastname: document.contactLastname,
                         contactEmail: document.contactEmail,
                         contactBirthday: document.contactBirthday,
+                        imageUrl: document.imageUrl,
                         user: User,
                         date: document.date, 
                     }
@@ -119,7 +137,8 @@ router.put('/contacts/edit-contact/:id', isLoggedIn,async (req, res)=>{
 });
 
 router.delete('/contacts/delete/:id', isLoggedIn, async (req, res)=>{
-    await Contact.findByIdAndDelete(req.params.id); 
+    const {public_id} = await Contact.findByIdAndDelete(req.params.id);
+    await cloudinary.v2.uploader.destroy(public_id);
     res.redirect('/contacts');
 });
 
