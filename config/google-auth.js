@@ -20,7 +20,7 @@ passport.deserializeUser(function(user, done) {
 passport.use(new GoogleStrategy({
     clientID: "1087979620982-3lve8gmmkedpfqcn0hcju54s24coph5d.apps.googleusercontent.com",
     clientSecret: "_qlyucbpsETJd3dxK9Hw_Bd0",
-    callbackURL: "http://contactsarevalo.tk:8080/google/callback"
+    callbackURL: "http://localhost:8080/google/callback"
   },
   function(accessToken, refreshToken, profile, done) {
     //
